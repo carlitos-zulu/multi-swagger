@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Zulu - API Commons
+  title: Zulu - API Commons Test
   description: >-
     Service responsible for managing entire data from an User in Zulu ecosystem.
   version: 1.0.0
