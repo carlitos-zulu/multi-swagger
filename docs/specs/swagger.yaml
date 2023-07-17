@@ -1,0 +1,883 @@
+openapi: 3.0.3
+info:
+  title: Zulu - API Commons
+  description: >-
+    Service responsible for managing entire data from an User in Zulu ecosystem.
+  version: 1.0.0
+  contact:
+    name: Zulu Tech Team
+    email: tech-team@zuluapp.io
+servers:
+  - url: https://api-dev.zuluapp.io/commons
+    description: Develop API
+  - url: https://api-stage.zuluapp.io/commons
+    description: Stage API
+  - url: https://api-prod.zuluapp.io/commons
+    description: Productive API
+  - url: http://localhost:8080/zulu-common-api/v1/read
+    description: Local read url
+  - url: http://localhost:8080/zulu-common-api/v1/write
+    description: Local write url
+paths:
+  "/graphql":
+    post:
+      tags:
+        - Readers
+      summary: >-
+        Get data by GraphQL queries.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/graphBody"
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/graphResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    type: string
+                    example: BadRequestApiError
+                  cause:
+                    type: string
+                    example: filter "test" unsupported
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    type: string
+                    example: NotFoundApiError
+                  cause:
+                    type: string
+                    example: key not found
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/internalServerError"
+  "/{liquidityProvider}":
+    get:
+      tags:
+        - Readers
+      summary: >-
+        Get all the active liquidity providers configured.
+      parameters:
+        - $ref: "#/components/parameters/liquidityProvider"
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/allLPs"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    type: string
+                    example: NotFoundApiError
+                  cause:
+                    type: string
+                    example: no liquidity providers found
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    type: string
+                    example: UnprocessableEntityApiError
+                  cause:
+                    type: string
+                    example: vertical "test" in LP id "1" is not supported
+    post:
+      tags:
+        - Writers
+      summary: >-
+        Creates any liquidity provider.
+      parameters:
+        - $ref: "#/components/parameters/liquidityProviderWriter"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/lpCreate"
+      responses:
+        "201":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/mapByVerticalAndIDs"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    type: string
+                    example: BadRequestApiError
+                  cause:
+                    type: string
+                    example: body validation error
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    type: string
+                    example: ResourceConflictApiError
+                  cause:
+                    type: string
+                    example: liquidity provider identified with "CC" number "123456789" already exists
+  "/{liquidityProvider}/verticals/{vertical}":
+    get:
+      tags:
+        - Readers
+      summary: >-
+        Get all liquidity providers by vertical.
+      parameters:
+        - $ref: "#/components/parameters/liquidityProvider"
+        - $ref: "#/components/parameters/vertical"
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/allLPsByVertical"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    type: string
+                    example: NotFoundApiError
+                  cause:
+                    type: string
+                    example: no liquidity providers found in vertical "B2B"
+  "/{liquidityProvider}/{lp_uuid}/verticals/{vertical}":
+    get:
+      tags:
+        - Readers
+      summary: >-
+        Get liquidity provider data by its uuid and vertical.
+      parameters:
+        - $ref: "#/components/parameters/liquidityProvider"
+        - $ref: "#/components/parameters/vertical"
+        - $ref: "#/components/parameters/LPUUID"
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LPbyVertical"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    type: string
+                    example: NotFoundApiError
+                  cause:
+                    type: string
+                    example: no liquidity provider found by uuid "18834362f-ded0-11ed-930b-0242ac1a0002" in vertical "B2B"
+    patch:
+      tags:
+        - Writers
+      summary: >-
+        Updates any liquidity provider property, including sub-properties.
+      parameters:
+        - $ref: "#/components/parameters/liquidityProviderWriter"
+        - $ref: "#/components/parameters/vertical"
+        - $ref: "#/components/parameters/LPUUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/lpUpdate"
+      responses:
+        "200":
+          description: Ok
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    type: string
+                    example: BadRequestApiError
+                  cause:
+                    type: string
+                    example: no fields found to update
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    type: string
+                    example: NotFoundApiError
+                  cause:
+                    type: string
+                    example: no liquidity provider found by uuid "18834362f-ded0-11ed-930b-0242ac1a0002" in vertical "B2C"
+  "/admin/liquidity-providers/verticals/{vertical}/banks/{bankUUID}":
+    get:
+      tags:
+        - Readers
+      summary: >-
+        Get all liquidity providers by vertical + bank uuid.
+      parameters:
+        - $ref: "#/components/parameters/liquidityProvider"
+        - $ref: "#/components/parameters/vertical"
+        - $ref: "#/components/parameters/bankUUID"
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LPbyVertical"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    type: string
+                    example: NotFoundApiError
+                  cause:
+                    type: string
+                    example: no liquidity providers found in vertical "B2C" with bank "1"
+  "/{liquidityProvider}/bank-accounts/{bank_account_uuid}":
+    get:
+      tags:
+        - Readers
+      summary: >-
+        Gets the liquidity provider that owns the bank account id queried.
+      parameters:
+        - $ref: "#/components/parameters/liquidityProvider"
+        - $ref: "#/components/parameters/bankAccountID"
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LPbyVertical"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    type: string
+                    example: NotFoundApiError
+                  cause:
+                    type: string
+                    example: no liquidity provider found with bank account "1"
+  "/{liquidityProvider}/{lp_vertical_uuid}/bank-accounts":
+    post:
+      tags:
+        - Writers
+      summary: >-
+        Creates any liquidity provider bank account.
+      parameters:
+        - $ref: "#/components/parameters/LPVERTICALUUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/lpBankAccountCreate"
+      responses:
+        "201":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/mapByVerticalAndIDs"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    type: string
+                    example: BadRequestApiError
+                  cause:
+                    type: string
+                    example: body validation error
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                properties:
+                  error:
+                    type: string
+                    example: NotFoundApiError
+                  cause:
+                    type: string
+                    example: no liquidity provider vertical found by id "40"
+components:
+  parameters:
+    liquidityProvider:
+      name: liquidityProvider
+      in: path
+      required: true
+      description: >-
+        If it starts with /admin, all data will be queried regardless of inactive states on entities.
+        The path /admin is ONLY enabled for GET.
+      schema:
+        type: string
+        enum:
+          - liquidity-providers
+          - admin/liquidity-providers
+    liquidityProviderWriter:
+      name: liquidityProvider
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - /liquidity-provider
+    vertical:
+      name: vertical
+      in: path
+      required: true
+      schema:
+        type: string
+        example: B2B
+        enum:
+          - B2B
+          - B2C
+          - b2b
+          - b2c
+    bankUUID:
+      name: bankUUID
+      in: path
+      required: true
+      schema:
+        type: string
+        example: 18834362f-ded0-11ed-930b-0242ac1a0002
+    bankAccountID:
+      name: bank_account_uuid
+      in: path
+      required: true
+      schema:
+        type: string
+        example: 18834362f-ded0-11ed-930b-0242ac1a0002
+    LPUUID:
+      name: lp_uuid
+      in: path
+      required: true
+      schema:
+        type: string
+    LPVERTICALUUID:
+      name: lp_vertical_uuid
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    internalServerError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: InternalServerApiError
+        cause:
+          type: string
+          example: Cannot query field "test" on type "Query".
+    graphBody:
+      type: object
+      properties:
+        query:
+          type: string
+          example: "{\n            countries {\n                id, name, iso3, iso2\n                translations{\n                    kr, pt_BR, pt, nl, hr, fa, de, es, fr, ja, it, cn, tr\n                }\n                states{\n                    id, name\n                    cities {\n                        id, name, latitude, longitude\n                    }\n                }\n            }\n        }"
+    graphResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          example:
+            {
+              "countries":
+                [
+                  {
+                    "iso2": "CO",
+                    "iso3": "COL",
+                    "name": "Colombia",
+                    "states":
+                      [
+                        {
+                          "name": "Amazonas",
+                          "cities": [{ "id": 20807, "name": "El Encanto" }],
+                        },
+                      ],
+                  },
+                ],
+            }
+    allLPs:
+      type: array
+      items:
+        $ref: "#/components/schemas/LP"
+      example:
+        [
+          {
+            "id": 1,
+            "createdAt": "2023-02-10T18:05:02Z",
+            "updatedAt": "2023-02-10T18:05:02Z",
+            "state": true,
+            "name": "Pepito Perez",
+            "maxAmount": 100000,
+            "minAmount": 5,
+            "document":
+              {
+                "id": 25,
+                "name": "CEDULA DE CIUDADANIA",
+                "type": "NATIONAL-ID",
+                "key": "CE",
+                "country_id": 48,
+              },
+            "documentNumber": "123456789",
+            "country":
+              {
+                "id": 48,
+                "name": "Colombia",
+                "numeric_code": "170",
+                "phone_code": "57",
+                "currency": "COP",
+                "currency_name": "Colombian peso",
+                "currency_symbol": "$",
+                "iso3": "COL",
+                "iso2": "CO",
+                "translations":
+                  {
+                    "cn": "哥伦比亚",
+                    "de": "Kolumbien",
+                    "es": "Colombia",
+                    "fa": "کلمبیا",
+                    "fr": "Colombie",
+                    "hr": "Kolumbija",
+                    "it": "Colombia",
+                    "ja": "コロンビア",
+                    "kr": "콜롬비아",
+                    "nl": "Colombia",
+                    "pt": "Colômbia",
+                    "tr": "Kolombiya",
+                    "pt_BR": "Colômbia",
+                  },
+              },
+            "self": false,
+            "invoice": false,
+            "verticals":
+              {
+                "B2B":
+                  {
+                    "id": 1,
+                    "createdAt": "2023-02-10T18:10:14Z",
+                    "updatedAt": "2023-02-10T18:17:58Z",
+                    "state": true,
+                    "name": "B2B",
+                    "cashInCharge": 4700,
+                    "cashOutCharge": 4680,
+                    "bankAccounts":
+                      [
+                        {
+                          "id": 1,
+                          "createdAt": "2023-02-10T18:10:14Z",
+                          "updatedAt": "2023-02-10T18:17:39Z",
+                          "state": true,
+                          "bank":
+                            {
+                              "id": 1,
+                              "name": "Bancolombia",
+                              "ach_code": 1007,
+                            },
+                          "accountNumber": "65049204862",
+                          "accountType": "Ahorros",
+                        },
+                        {
+                          "id": 3,
+                          "createdAt": "2023-02-10T21:04:14Z",
+                          "updatedAt": "2023-02-10T21:04:14Z",
+                          "state": true,
+                          "bank":
+                            {
+                              "id": 3,
+                              "name": "BANCO AGRARIO",
+                              "ach_code": 1040,
+                            },
+                          "accountNumber": "575741545",
+                          "accountType": "Ahorros",
+                        },
+                      ],
+                  },
+                "B2C":
+                  {
+                    "id": 2,
+                    "createdAt": "2023-02-10T19:55:14Z",
+                    "updatedAt": "2023-02-10T19:55:14Z",
+                    "state": true,
+                    "name": "B2C",
+                    "cashInCharge": 4750,
+                    "cashOutCharge": 4685,
+                    "bankAccounts":
+                      [
+                        {
+                          "id": 2,
+                          "createdAt": "2023-02-10T20:13:59Z",
+                          "updatedAt": "2023-02-10T21:51:53Z",
+                          "state": true,
+                          "bank":
+                            {
+                              "id": 3,
+                              "name": "BANCO AGRARIO",
+                              "ach_code": 1040,
+                            },
+                          "accountNumber": "575741545",
+                          "accountType": "Ahorros",
+                          "cashInCharge": 4000,
+                          "cashOutCharge": 4100,
+                        },
+                      ],
+                  },
+              },
+          },
+        ]
+    allLPsByVertical:
+      type: array
+      items:
+        $ref: "#/components/schemas/LPbyVertical"
+    LP:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+        name:
+          type: string
+        state:
+          type: boolean
+        minAmount:
+          type: number
+        maxAmount:
+          type: number
+        document:
+          $ref: "#/components/schemas/documentType"
+        documentNumber:
+          type: string
+        country:
+          $ref: "#/components/schemas/country"
+        self:
+          type: boolean
+        invoice:
+          type: boolean
+        createdAt:
+          type: string
+          format: "date-time"
+          example: "2023-02-10T18:10:14Z"
+        updatedAt:
+          type: string
+          format: "date-time"
+          example: "2023-02-12T18:10:14Z"
+        verticals:
+          type: object
+          properties:
+            VERTICAL_NAME:
+              description: the key could be B2B or B2C (the vertical key name)
+              $ref: "#/components/schemas/verticalLP"
+    LPbyVertical:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+        name:
+          type: string
+        state:
+          type: boolean
+        minAmount:
+          type: number
+        maxAmount:
+          type: number
+        document:
+          $ref: "#/components/schemas/documentType"
+        documentNumber:
+          type: string
+        country:
+          $ref: "#/components/schemas/country"
+        self:
+          type: boolean
+        invoice:
+          type: boolean
+        createdAt:
+          type: string
+          format: "date-time"
+          example: "2023-02-10T18:10:14Z"
+        updatedAt:
+          type: string
+          format: "date-time"
+          example: "2023-02-12T18:10:14Z"
+        vertical:
+          $ref: "#/components/schemas/verticalLP"
+    documentType:
+      type: object
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        type:
+          type: string
+        key:
+          type: string
+        country_id:
+          type: number
+    country:
+      type: object
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        numeric_code:
+          type: string
+        phone_code:
+          type: string
+        currency:
+          type: string
+        currency_name:
+          type: string
+        currency_symbol:
+          type: string
+        iso2:
+          type: string
+        iso3:
+          type: string
+        translations:
+          type: object
+    verticalLP:
+      type: object
+      required:
+        ["id", "name", "state", "createdAt", "updatedAt", "bankAccounts"]
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        state:
+          type: boolean
+        cashInCharge:
+          type: number
+        cashOutCharge:
+          type: number
+        createdAt:
+          type: string
+          format: "date-time"
+          example: "2023-02-10T18:10:14Z"
+        updatedAt:
+          type: string
+          format: "date-time"
+          example: "2023-02-12T18:10:14Z"
+        bankAccounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/verticalBankAccountLP"
+    verticalBankAccountLP:
+      type: object
+      properties:
+        id:
+          type: number
+        state:
+          type: boolean
+        createdAt:
+          type: string
+          format: "date-time"
+          example: "2023-02-10T18:10:14Z"
+        updatedAt:
+          type: string
+          format: "date-time"
+          example: "2023-02-12T18:10:14Z"
+        accountNumber:
+          type: string
+        accountType:
+          type: string
+        # bank:
+        #   type: object
+        #   $ref: "#/components/schemas/bank"
+    bank:
+      type: object
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        ach_code:
+          type: number
+    lpUpdate:
+      type: object
+      properties:
+        state:
+          type: boolean
+          example: false
+        name:
+          type: string
+          example: Pepito Pérez
+        maxAmount:
+          type: number
+          example: 10000
+        minAmount:
+          type: number
+          example: 1
+        countryDocumentTypeId:
+          type: number
+          example: 25
+        documentNumber:
+          type: string
+          example: 1231656546
+        countryId:
+          type: number
+          example: 48
+        self:
+          type: boolean
+          example: false
+        invoice:
+          type: boolean
+          example: false
+        vertical:
+          $ref: "#/components/schemas/lpVertical"
+        bankAccounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/lpUpdateBankAccount"
+    lpUpdateBankAccount:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: number
+          example: 5
+        bankId:
+          type: number
+          example: 21
+        accountNumber:
+          type: string
+          example: 64868456846
+        accountType:
+          type: string
+          example: Ahorros
+        cashInCharge:
+          type: number
+          example: 4510
+        cashOutCharge:
+          type: number
+          example: 4420
+        state:
+          type: boolean
+          example: false
+    lpVertical:
+      type: object
+      properties:
+        cashInCharge:
+          type: number
+          example: 4500
+        cashOutCharge:
+          type: number
+          example: 4400
+    lpCreate:
+      type: object
+      required:
+        - countryDocumentTypeId
+        - countryId
+        - minAmount
+        - maxAmount
+        - documentNumber
+        - name
+        - self
+        - invoice
+      properties:
+        countryDocumentTypeId:
+          type: number
+        countryId:
+          type: number
+        minAmount:
+          type: number
+        maxAmount:
+          type: number
+        documentNumber:
+          type: string
+        name:
+          type: string
+        self:
+          type: boolean
+        invoice:
+          type: boolean
+        vertical:
+          $ref: "#/components/schemas/lpVertical"
+    mapByVerticalAndIDs:
+      type: object
+      properties:
+        B2B:
+          type: string
+          example: 18834362f-ded0-11ed-930b-0242ac1a0002
+        B2C:
+          type: string
+          example: 18834362f-ded0-11ed-930b-0242ac1a0002
+    lpBankAccountCreate:
+      type: object
+      required:
+        - bankId
+        - accountNumber
+        - accountType
+      properties:
+        bankId:
+          type: number
+          example: 23
+        accountNumber:
+          type: string
+          example: 123456
+        accountType:
+          type: string
+          example: Ahorros
+        cashInCharge:
+          type: number
+          example: 4600
+        cashOutCharge:
+          type: number
+          example: 4500
